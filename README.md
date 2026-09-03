@@ -42,6 +42,12 @@ npm run test:e2e     # Playwright against a throwaway API + Vite
 npm test             # unit, then e2e
 ```
 
+Live demo: https://wordkeep-zeta.vercel.app
+
+Source: https://github.com/marcfs31/wordkeep
+
+The Vercel Hobby deploy stores SQLite in `/tmp`, so kept words last for the life of a serverless instance. For a durable personal lexicon, run Docker on [Fly.io](https://fly.io) with the volume in `fly.toml` (`fly auth login` then `fly deploy`). Persistent SQLite on Vercel needs a Turso database (accept marketplace terms, then `vercel integration add tursocloud/database`).
+
 ## Production
 
 ```bash

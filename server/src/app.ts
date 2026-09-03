@@ -64,7 +64,7 @@ app.use('/api/*', async (c, next) => {
 
 const GRADES: Grade[] = ['again', 'hard', 'good', 'easy']
 
-app.get('/api/health', (c) => c.json({ ok: true, version: '1.0.0' }))
+app.get('/api/health', (c) => c.json({ ok: true, version: '1.0.1' }))
 
 app.get('/api/session', (c) =>
   c.json({ ok: true, locked: Boolean(accessKey), signedIn: isSignedIn(c) }),
