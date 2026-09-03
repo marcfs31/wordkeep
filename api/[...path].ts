@@ -1,6 +1,6 @@
 import { handle } from 'hono/vercel'
-import { app } from '../server/src/app.ts'
-import { seedGraphDemo } from '../server/src/seed-graph.ts'
+import { app } from '../server/src/app'
+import { seedGraphDemo } from '../server/src/seed-graph'
 
 export const config = {
   runtime: 'nodejs',
