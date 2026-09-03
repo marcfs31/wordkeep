@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "description": "Personal lexicon with active recall, etymology, and cross-language word graphs",
   "scripts": {
