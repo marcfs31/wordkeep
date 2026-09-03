@@ -1,0 +1,169 @@
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import type { GraphPayload, WordDetail } from '@shared/types'
+import { FormsLine } from '../components/SenseExtras'
+import { SenseList } from '../components/SenseList'
+import { WordGraph } from '../components/WordGraph'
+import { useStats } from '../context/StatsContext'
+import { useWordTrail } from '../context/WordTrailContext'
+import { api } from '../lib/api'
+import { keptHref, lookupHref } from '../lib/paths'
+import { formatDue, isRtl, statusLabel } from '../lib/format'
+
+export function WordPage() {
+  const { id = '' } = useParams()
+  const navigate = useNavigate()
+  const { refresh } = useStats()
+  const { visit } = useWordTrail()
+  const [word, setWord] = useState<WordDetail | null>(null)
+  const [graph, setGraph] = useState<GraphPayload>({ nodes: [], edges: [] })
+  const [note, setNote] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!id) return
+    api
+      .word(id)
+      .then((item) => {
+        setWord(item)
+        setNote(item.note)
+      })
+      .catch((err: Error) => setError(err.message))
+    api.graph(id).then(setGraph).catch(() => undefined)
+  }, [id])
+
+  useEffect(() => {
+    if (!word) return
+    visit({
+      lemma: word.lemma,
+      lang: word.language,
+      label: word.displayLemma,
+      href: keptHref(word.id),
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [word?.id, word?.lemma, word?.language, word?.displayLemma, visit])
+
+  async function saveNote() {
+    if (!word) return
+    setSaving(true)
+    try {
+      setWord(await api.patch(word.id, { note }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function toggleArchive() {
+    if (!word) return
+    setWord(await api.patch(word.id, { archived: !word.archivedAt }))
+    refresh()
+  }
+
+  async function remove() {
+    if (!word) return
+    if (!confirm(`Delete “${word.displayLemma}”?`)) return
+    await api.remove(word.id)
+    refresh()
+    navigate('/words')
+  }
+
+  if (error && !word) return <p className="text-accent">{error}</p>
+  if (!word) return <p className="text-muted">Loading…</p>
+
+  return (
+    <article className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+      <div>
+        <p className="text-xs uppercase tracking-[0.18em] text-gold">
+          {word.languageName} · {statusLabel(word.status)} · {formatDue(word.dueAt)}
+        </p>
+        <h1 className="lemma mt-2 text-5xl sm:text-6xl" dir={isRtl(word.language) ? 'rtl' : 'ltr'}>
+          {word.displayLemma}
+        </h1>
+        {word.phonetic && <p className="mt-2 text-lg text-muted">{word.phonetic}</p>}
+        <FormsLine forms={word.forms} />
+
+        {word.etymology && (
+          <blockquote className="mt-6 border-l-2 border-gold pl-4 leading-relaxed text-muted">
+            <span className="mb-1 block text-[11px] uppercase tracking-[0.18em] text-gold">
+              Etymology
+            </span>
+            {word.etymology}
+          </blockquote>
+        )}
+
+        <div className="mt-8">
+          <SenseList
+            senses={word.senses}
+            language={word.language}
+            primaryId={word.primarySenseId}
+            onPick={async (_index, sense) => {
+              if (!sense.id) return
+              setWord(await api.patch(word.id, { primarySenseId: sense.id }))
+            }}
+          />
+        </div>
+
+        <label className="mt-8 block">
+          <span className="mb-2 block text-xs uppercase tracking-[0.16em] text-muted">
+            Optional mnemonic — the definition is above
+          </span>
+          <textarea
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            onBlur={() => void saveNote()}
+            className="h-28 w-full rounded-2xl border border-rule bg-paper-2 p-3 text-sm outline-none"
+          />
+        </label>
+        <p className="mt-1 text-xs text-muted">{saving ? 'Saving…' : 'Saved when you leave the box.'}</p>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void toggleArchive()}
+            className="rounded-full border border-rule px-4 py-2 text-sm"
+          >
+            {word.archivedAt ? 'Restore to recall' : 'Archive from recall'}
+          </button>
+          <button type="button" onClick={() => void remove()} className="rounded-full px-4 py-2 text-sm text-accent">
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <aside className="space-y-4">
+        <div className="flex items-baseline justify-between">
+          <h2 className="lemma text-2xl">Language atlas</h2>
+          <Link to={`/graph/${word.id}`} className="text-sm text-accent">
+            Expand
+          </Link>
+        </div>
+        <WordGraph nodes={graph.nodes} edges={graph.edges} height={380} cap={36} />
+        <ul className="max-h-80 overflow-y-auto rounded-2xl border border-rule">
+          {word.links.slice(0, 80).map((link) => (
+            <li
+              key={link.id}
+              className="flex items-baseline justify-between gap-3 border-b border-rule px-3 py-2 last:border-b-0"
+            >
+              <Link
+                to={link.toWordId ? keptHref(link.toWordId) : lookupHref(link.lemma, link.language)}
+                className="lemma text-lg"
+                dir={isRtl(link.language) ? 'rtl' : 'ltr'}
+              >
+                {link.lemma}
+              </Link>
+              <span className="text-xs text-muted">
+                {link.relation}
+                {' · '}
+                {link.languageName}
+                {link.toWordId ? ' · kept' : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    </article>
+  )
+}

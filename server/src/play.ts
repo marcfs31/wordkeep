@@ -1,0 +1,164 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { PlayCard, PlayRound } from '../../shared/types.ts'
+import { languageName } from './languages.ts'
+import { lookupWord } from './lookup.ts'
+
+const bankDir = join(dirname(fileURLToPath(import.meta.url)), '../data/banks')
+mkdirSync(bankDir, { recursive: true })
+
+const memory = new Map<string, string[]>()
+const NEED = 2000
+const FREQ_ALIAS: Record<string, string> = {
+  zh: 'zh_cn',
+  cmn: 'zh_cn',
+  yue: 'zh_tw',
+  nb: 'no',
+  nn: 'no',
+  no: 'no',
+  'pt-br': 'pt_br',
+  'pt-BR': 'pt_br',
+}
+
+function freqCode(lang: string): string {
+  return FREQ_ALIAS[lang] ?? lang.split('-')[0] ?? lang
+}
+
+export function looksLexical(word: string, lang: string): boolean {
+  if (/\d/.test(word)) return false
+  if (/[._/\\]/.test(word)) return false
+  const script = lang.split('-')[0] ?? lang
+  if (['zh', 'ja', 'ko', 'cmn', 'yue'].includes(script) || script.startsWith('zh')) {
+    return [...word].length >= 2
+  }
+  return word.length >= 7
+}
+
+export function parseFrequency(text: string, lang: string): string[] {
+  const lines = text.split(/\r?\n/)
+  const all: string[] = []
+  const seen = new Set<string>()
+  for (const line of lines) {
+    const word = line.trim().split(/\s+/)[0]?.normalize('NFC')
+    if (!word) continue
+    const key = word.toLocaleLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    all.push(word)
+  }
+  const skip = Math.min(8000, Math.floor(all.length * 0.18))
+  const picked: string[] = []
+  for (let i = skip; i < all.length && picked.length < NEED + 400; i += 1) {
+    const word = all[i]
+    if (word && looksLexical(word, lang)) picked.push(word)
+  }
+  if (picked.length < NEED) {
+    for (const word of all) {
+      if (picked.length >= NEED) break
+      if (looksLexical(word, lang) && !picked.includes(word)) picked.push(word)
+    }
+  }
+  return picked.slice(0, Math.max(NEED, picked.length))
+}
+
+async function downloadBank(lang: string): Promise<string[]> {
+  const code = freqCode(lang)
+  const urls = [
+    `https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/${code}/${code}_50k.txt`,
+    `https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2016/${code}/${code}_50k.txt`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Wordkeep/1.0', Accept: 'text/plain' },
+        signal: AbortSignal.timeout(20000),
+      })
+      if (!res.ok) continue
+      const text = await res.text()
+      if (text.startsWith('<') || text.length < 1000) continue
+      const words = parseFrequency(text, lang)
+      if (words.length >= NEED) return words
+      if (words.length >= 800) return words
+    } catch {
+      /* try next source */
+    }
+  }
+  return []
+}
+
+export async function getBank(lang: string): Promise<string[]> {
+  const cached = memory.get(lang)
+  if (cached && cached.length >= NEED) return cached
+  const path = join(bankDir, `${lang}.json`)
+  if (existsSync(path)) {
+    try {
+      const words = JSON.parse(readFileSync(path, 'utf8')) as string[]
+      if (Array.isArray(words) && words.length >= NEED) {
+        memory.set(lang, words)
+        return words
+      }
+    } catch {
+      /* rebuild */
+    }
+  }
+  const words = await downloadBank(lang)
+  if (words.length >= NEED) {
+    writeFileSync(path, JSON.stringify(words))
+    memory.set(lang, words)
+  }
+  return words
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const a = copy[i]
+    const b = copy[j]
+    if (a === undefined || b === undefined) continue
+    copy[i] = b
+    copy[j] = a
+  }
+  return copy
+}
+
+export function shortDefinition(definition: string): string {
+  const clipped = definition.replace(/\s+/g, ' ').trim()
+  if (clipped.length <= 180) return clipped
+  return `${clipped.slice(0, 177).replace(/\s+\S*$/, '')}…`
+}
+
+export async function buildRound(lang: string): Promise<PlayRound | null> {
+  const bank = await getBank(lang)
+  if (bank.length < NEED) return null
+  const pool = shuffle(bank)
+  const cards: PlayCard[] = []
+  const used = new Set<string>()
+  for (const lemma of pool) {
+    if (cards.length >= 5) break
+    if (used.has(lemma.toLowerCase())) continue
+    try {
+      const lookup = await lookupWord(lemma, lang)
+      const sense = lookup?.senses[0]
+      const definition = sense?.definition?.trim()
+      if (!lookup || !definition || definition.length < 24) continue
+      used.add(lemma.toLowerCase())
+      cards.push({
+        id: crypto.randomUUID(),
+        lemma: lookup.displayLemma,
+        definition: shortDefinition(definition),
+        partOfSpeech: sense?.partOfSpeech ?? '',
+      })
+    } catch {
+      continue
+    }
+  }
+  if (cards.length < 5) return null
+  return {
+    lang,
+    languageName: languageName(lang),
+    bankSize: bank.length,
+    cards,
+  }
+}

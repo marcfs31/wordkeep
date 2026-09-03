@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+*.tsbuildinfo
+server/data
+.env
+.vercel
+.fly
+data
+test-results
+playwright-report
+blob-report
+coverage
+server/coverage

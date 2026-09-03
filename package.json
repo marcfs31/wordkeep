@@ -1,0 +1,33 @@
+{
+  "name": "wordkeep",
+  "private": true,
+  "version": "1.0.0",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "Personal lexicon with active recall, etymology, and cross-language word graphs",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:api": "npm run dev -w server",
+    "dev:web": "npm run dev -w client",
+    "test": "npm run test -w server && npm run test -w client && npm run test:e2e",
+    "test:unit": "npm run test -w server && npm run test -w client",
+    "test:e2e": "playwright test",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "seed:graph": "npm run seed:graph -w server"
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "concurrently": "^9.2.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
+  }
+}

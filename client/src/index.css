@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+  --color-paper: #f3eee4;
+  --color-paper-2: #ebe4d6;
+  --color-ink: #1c1712;
+  --color-muted: #6f675c;
+  --color-rule: #d8cfc2;
+  --color-accent: #8f2d1f;
+  --color-accent-2: #c44932;
+  --color-gold: #a67c32;
+  --color-saved: #2f5d50;
+  --color-related: #3d5c7a;
+  --color-etymology: #6b3f6e;
+  --color-chip: #e7dfd1;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    background-image:
+      radial-gradient(ellipse at top, rgba(166, 124, 50, 0.08), transparent 55%),
+      linear-gradient(180deg, #f7f2e9 0%, #f3eee4 40%, #efe8db 100%);
+  }
+
+  ::selection {
+    background: #e7c9b8;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-paper: #161310;
+    --color-paper-2: #201b16;
+    --color-ink: #f0e8dc;
+    --color-muted: #b3a99b;
+    --color-rule: #3a332c;
+    --color-accent: #e07a66;
+    --color-accent-2: #f0a090;
+    --color-gold: #d4b072;
+    --color-saved: #7dbaa8;
+    --color-related: #8eb4d4;
+    --color-etymology: #c49bc8;
+    --color-chip: #2a241e;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(224, 122, 102, 0.12), transparent 50%),
+      linear-gradient(180deg, #1a1612 0%, #161310 100%);
+  }
+}
+
+.lemma {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+}
+
+.card-face {
+  transform-style: preserve-3d;
+  transition: transform 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card-face.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-side {
+  backface-visibility: hidden;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}

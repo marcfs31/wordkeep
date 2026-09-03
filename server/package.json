@@ -1,0 +1,21 @@
+{
+  "name": "server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "test": "tsx --test --test-concurrency=1 ../shared/sm2.test.ts src/*.test.ts",
+    "seed:graph": "tsx src/seed-graph.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.5",
+    "hono": "^4.9.9"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "tsx": "^4.20.5",
+    "typescript": "~5.9.2"
+  }
+}
