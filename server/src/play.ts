@@ -1,12 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { PlayCard, PlayRound } from '../../shared/types.ts'
 import { languageName } from './languages.ts'
 import { lookupWord } from './lookup.ts'
+import { writableDir } from './paths.ts'
 
-const bankDir = join(dirname(fileURLToPath(import.meta.url)), '../data/banks')
-mkdirSync(bankDir, { recursive: true })
+const bankDir = writableDir('banks')
 
 const memory = new Map<string, string[]>()
 const NEED = 2000

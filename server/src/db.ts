@@ -1,12 +1,16 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { fileURLToPath } from 'node:url'
+import { writableDir } from './paths.ts'
 
-const root = dirname(fileURLToPath(import.meta.url))
-const dataDir = join(root, '../data')
-const dbPath = process.env.WORDKEEP_DB ?? join(dataDir, 'wordkeep.db')
-if (dbPath !== ':memory:') mkdirSync(dirname(dbPath), { recursive: true })
+const dbPath = process.env.WORDKEEP_DB ?? join(writableDir(), 'wordkeep.db')
+if (dbPath !== ':memory:') {
+  try {
+    mkdirSync(dirname(dbPath), { recursive: true })
+  } catch {
+    /* serverless parent dirs may already exist */
+  }
+}
 
 export const db = new DatabaseSync(dbPath)
 
