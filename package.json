@@ -16,6 +16,7 @@
     "test:unit": "npm run test -w server && npm run test -w client",
     "test:e2e": "playwright test",
     "build": "npm run build -w client",
+    "build:api": "npx esbuild server/src/vercel-handler.ts --bundle --platform=node --format=esm --outfile='api/[...path].js' --packages=bundle",
     "start": "npm run start -w server",
     "seed:graph": "npm run seed:graph -w server"
   },
@@ -25,7 +26,8 @@
   ],
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.28.2"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,

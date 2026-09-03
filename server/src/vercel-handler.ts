@@ -1,11 +1,6 @@
 import { handle } from 'hono/vercel'
-import { app } from '../server/src/app'
-import { seedGraphDemo } from '../server/src/seed-graph'
-
-export const config = {
-  runtime: 'nodejs',
-  maxDuration: 60,
-}
+import { app } from './app.ts'
+import { seedGraphDemo } from './seed-graph.ts'
 
 if (process.env.WORDKEEP_SEED === '1') {
   try {
