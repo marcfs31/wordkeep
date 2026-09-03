@@ -5,6 +5,7 @@ dist
 server/data
 .env
 .vercel
+public
 .fly
 data
 test-results
@@ -12,3 +13,4 @@ playwright-report
 blob-report
 coverage
 server/coverage
+.env*

@@ -2,6 +2,7 @@
   "name": "wordkeep",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "license": "MIT",
   "engines": {
     "node": ">=22"
@@ -29,5 +30,9 @@
   "allowScripts": {
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.5"
   }
 }
